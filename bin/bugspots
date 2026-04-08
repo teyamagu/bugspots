@@ -40,8 +40,8 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-# Set master as the default branch
-options[:branch] ||= "master"
+# Set main as the default branch
+options[:branch] ||= "main"
 
 puts "Scanning #{ARGV[0]} repo".foreground(:green)
 
