@@ -1,0 +1,21 @@
+PATH
+  remote: .
+  specs:
+    bugspots (0.2.2)
+      rainbow
+      rugged (>= 1.7.2)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    rainbow (3.1.1)
+    rugged (1.9.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  bugspots!
+
+BUNDLED WITH
+   1.17.2

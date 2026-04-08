@@ -1,10 +1,11 @@
 #!/usr/bin/env ruby
 
-require 'shellwords'
-
 if ARGV.empty? or not Dir.exists? ARGV[0]
   ARGV.unshift Dir.pwd
 end
 
-cmd = "bugspots #{Shellwords.escape(ARGV[0])} #{ARGV[1..-1].join(' ')}"
-exec cmd
+repo = ARGV[0]
+args = ARGV[1..-1] || []
+
+# Use argv form to avoid invoking a shell with untrusted option strings.
+exec("bugspots", repo, *args)
