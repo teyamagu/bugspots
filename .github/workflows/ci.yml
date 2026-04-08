@@ -7,6 +7,21 @@ on:
   pull_request:
 
 jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "4.0.1"
+          bundler-cache: true
+
+      - name: Run dependency audit
+        run: bundle exec bundler-audit check --update
+
   lint:
     runs-on: ubuntu-latest
 

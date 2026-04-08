@@ -9,6 +9,9 @@ GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.3)
+    bundler-audit (0.9.3)
+      bundler (>= 1.2.0)
+      thor (~> 1.0)
     drb (2.2.3)
     json (2.19.3)
     language_server-protocol (3.17.0.5)
@@ -41,6 +44,7 @@ GEM
       prism (~> 1.7)
     ruby-progressbar (1.13.0)
     rugged (1.9.0)
+    thor (1.5.0)
     unicode-display_width (3.2.0)
       unicode-emoji (~> 4.1)
     unicode-emoji (4.2.0)
@@ -50,6 +54,7 @@ PLATFORMS
 
 DEPENDENCIES
   bugspots!
+  bundler-audit
   minitest
   rake
   rubocop (~> 1.76)
