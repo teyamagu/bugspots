@@ -6,9 +6,13 @@ module Bugspots
   Fix = Struct.new(:message, :date, :files)
   Spot = Struct.new(:file, :score)
 
-  def self.scan(repo, branch = 'main', depth = nil, regex = nil)
+  def self.scan(repo, branch = 'main', depth = nil, regex = nil, exclude_path_regex = nil)
     regex ||= /\b(fix(es|ed)?|close(s|d)?)\b/i
     fixes = []
+
+    if depth && depth.negative?
+      raise ArgumentError, 'depth must be greater than or equal to 0'
+    end
 
     repo = Rugged::Repository.new(repo)
     unless repo.branches.each_name(:local).sort.find { |b| b == branch }
@@ -25,12 +29,15 @@ module Bugspots
       files = commit.diff(commit.parents.first).deltas.collect do |d|
         d.old_file[:path]
       end
+      files.reject! { |file| file.match?(exclude_path_regex) } if exclude_path_regex
       fixes << Fix.new(commit.message.scrub.split("\n").first, commit.time, files)
     end
 
+    return [fixes, []] if fixes.empty?
+
     hotspots = Hash.new(0)
     current_time = Time.now
-    oldest_fix_date = fixes.last.date
+    oldest_fix_date = fixes.min_by(&:date).date
     fixes.each do |fix|
       fix.files.each do |file|
         # The timestamp used in the equation is normalized from 0 to 1, where

@@ -85,6 +85,7 @@ bugspots /path/to/repo -b main -d 500
 bugspots /path/to/repo --display-timestamps
 bugspots /path/to/repo -w "fix,close"
 bugspots /path/to/repo -r '/fix(es|ed)? #(\d+)/i'
+bugspots /path/to/repo --exclude-path '/^generated\\//'
 ```
 
 Options:
@@ -93,6 +94,7 @@ Options:
 - `-d`, `--depth [depth]`: number of commits to traverse.
 - `-w`, `--words ["w1,w2"]`: comma-separated bug-fix keywords.
 - `-r`, `--regex [regex]`: custom bug-fix regex.
+- `--exclude-path [regex]`: exclude changed file paths matching the regex.
 - `--display-timestamps`: include commit timestamps in output.
 
 ## Example Output

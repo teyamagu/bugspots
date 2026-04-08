@@ -36,6 +36,11 @@ OptionParser.new do |opts|
     options[:regex] = regex
   end
 
+  opts.on('--exclude-path [regex]', Regexp,
+          'exclude changed file paths matching the given regex') do |regex|
+    options[:exclude_path_regex] = regex
+  end
+
   # Option: Set Timestamp Display
   opts.on('--display-timestamps', 'show timestamps of each identified fix commit') do |_dt|
     options[:display_timestamps] = true
@@ -48,7 +53,13 @@ options[:branch] ||= 'main'
 puts "Scanning #{ARGV[0]} repo".foreground(:green)
 
 begin
-  fixes, spots = Bugspots.scan(ARGV[0], options[:branch], options[:depth], options[:regex])
+  fixes, spots = Bugspots.scan(
+    ARGV[0],
+    options[:branch],
+    options[:depth],
+    options[:regex],
+    options[:exclude_path_regex]
+  )
 
   puts "\tFound #{fixes.size} bugfix commits, with #{spots.size} hotspots:".foreground(:yellow)
   puts
@@ -66,8 +77,12 @@ begin
   spots.each do |spot|
     puts "\t\t#{spot.score}".foreground(:red) + " - #{spot.file}".foreground(:yellow)
   end
+rescue ArgumentError => e
+  warn e.message
+  exit 1
 rescue Rugged::RepositoryError
   error_message = 'Invalid Git repository - please run from or specify the '\
                   'full path to the root of the project.'
-  puts error_message.foreground(:red)
+  warn error_message.foreground(:red)
+  exit 1
 end
