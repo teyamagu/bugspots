@@ -1,0 +1,31 @@
+AllCops:
+  TargetRubyVersion: 4.0
+  NewCops: disable
+  UseCache: false
+  SuggestExtensions: false
+  Exclude:
+    - "vendor/**/*"
+
+Layout/LineLength:
+  Max: 100
+
+Metrics/AbcSize:
+  Exclude:
+    - "lib/bugspots/scanner.rb"
+    - "test/**/*"
+
+Metrics/CyclomaticComplexity:
+  Exclude:
+    - "lib/bugspots/scanner.rb"
+
+Metrics/MethodLength:
+  Exclude:
+    - "lib/bugspots/scanner.rb"
+    - "test/**/*"
+
+Metrics/PerceivedComplexity:
+  Exclude:
+    - "lib/bugspots/scanner.rb"
+
+Style/Documentation:
+  Enabled: false

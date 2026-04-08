@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
-lib = File.expand_path(File.dirname(__FILE__) + '/../lib')
+lib = File.expand_path("#{File.dirname(__FILE__)}/../lib")
 $LOAD_PATH.unshift(lib) if File.directory?(lib) && !$LOAD_PATH.include?(lib)
 
 require 'bugspots'
@@ -12,7 +13,7 @@ ARGV << '--help' if ARGV.empty?
 
 options = {}
 OptionParser.new do |opts|
-  opts.banner = "Usage: bugspots /path/to/git/repo"
+  opts.banner = 'Usage: bugspots /path/to/git/repo'
 
   # Option: Set Branch
   opts.on('-b', '--branch [name]', 'branch to crawl') do |b|
@@ -30,18 +31,19 @@ OptionParser.new do |opts|
   end
 
   # Option: Set Bugfix Indicator
-  opts.on('-r', '--regex [regex]', Regexp, 'bugfix indicator regex, ie: "fix(es|ed)?" or "/fixes #(\d+)/i"') do |regex|
+  opts.on('-r', '--regex [regex]', Regexp,
+          'bugfix indicator regex, ie: "fix(es|ed)?" or "/fixes #(\d+)/i"') do |regex|
     options[:regex] = regex
   end
 
   # Option: Set Timestamp Display
-  opts.on('--display-timestamps', 'show timestamps of each identified fix commit') do |dt|
+  opts.on('--display-timestamps', 'show timestamps of each identified fix commit') do |_dt|
     options[:display_timestamps] = true
   end
 end.parse!
 
 # Set main as the default branch
-options[:branch] ||= "main"
+options[:branch] ||= 'main'
 
 puts "Scanning #{ARGV[0]} repo".foreground(:green)
 
@@ -53,9 +55,9 @@ begin
 
   puts "\tFixes:".foreground(:green).underline
   fixes.each do |fix|
-    message = "\t\t- "
+    message = String.new("\t\t- ")
     message << "#{fix.date} " if options[:display_timestamps]
-    message << "#{fix.message}"
+    message << fix.message.to_s
     puts message.foreground(:yellow)
   end
 
@@ -64,7 +66,8 @@ begin
   spots.each do |spot|
     puts "\t\t#{spot.score}".foreground(:red) + " - #{spot.file}".foreground(:yellow)
   end
-
 rescue Rugged::RepositoryError
-  puts "Invalid Git repository - please run from or specify the full path to the root of the project.".foreground(:red)
+  error_message = 'Invalid Git repository - please run from or specify the '\
+                  'full path to the root of the project.'
+  puts error_message.foreground(:red)
 end

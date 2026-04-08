@@ -1,8 +1,10 @@
-source "https://rubygems.org"
+# frozen_string_literal: true
 
-ruby "4.0.1"
+source 'https://rubygems.org'
 
-#gem 'rugged', git: 'git://github.com/libgit2/rugged.git', branch: 'development', submodules: true
+ruby '4.0.1'
+
+# gem 'rugged', git: 'git://github.com/libgit2/rugged.git', branch: 'development', submodules: true
 
 # Specify your gem's dependencies in bugspots.gemspec
 gemspec

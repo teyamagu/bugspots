@@ -1,10 +1,12 @@
-require "rugged"
+# frozen_string_literal: true
+
+require 'rugged'
 
 module Bugspots
   Fix = Struct.new(:message, :date, :files)
   Spot = Struct.new(:file, :score)
 
-  def self.scan(repo, branch = "main", depth = nil, regex = nil)
+  def self.scan(repo, branch = 'main', depth = nil, regex = nil)
     regex ||= /\b(fix(es|ed)?|close(s|d)?)\b/i
     fixes = []
 
@@ -18,16 +20,16 @@ module Bugspots
     walker.push(repo.branches[branch].target)
     walker = walker.take(depth) if depth
     walker.each do |commit|
-      if commit.message.scrub =~ regex
-        files = commit.diff(commit.parents.first).deltas.collect do |d|
-          d.old_file[:path]
-        end
-        fixes << Fix.new(commit.message.scrub.split("\n").first, commit.time, files)
+      next unless commit.message.scrub =~ regex
+
+      files = commit.diff(commit.parents.first).deltas.collect do |d|
+        d.old_file[:path]
       end
+      fixes << Fix.new(commit.message.scrub.split("\n").first, commit.time, files)
     end
 
     hotspots = Hash.new(0)
-    currentTime = Time.now
+    current_time = Time.now
     oldest_fix_date = fixes.last.date
     fixes.each do |fix|
       fix.files.each do |file|
@@ -37,15 +39,15 @@ module Bugspots
         # with this algorithm due to the moving normalization; it's not meant
         # to provide some objective score, only provide a means of comparison
         # between one file and another at any one point in time
-        t = 1 - ((currentTime - fix.date).to_f / (currentTime - oldest_fix_date))
-        hotspots[file] += 1/(1+Math.exp((-12*t)+12))
+        t = 1 - ((current_time - fix.date).to_f / (current_time - oldest_fix_date))
+        hotspots[file] += 1 / (1 + Math.exp((-12 * t) + 12))
       end
     end
 
-    spots = hotspots.sort_by {|k,v| v}.reverse.collect do |spot|
-      Spot.new(spot.first, sprintf('%.4f', spot.last))
+    spots = hotspots.sort_by { |_k, v| v }.reverse.collect do |spot|
+      Spot.new(spot.first, format('%.4f', spot.last))
     end
 
-    return fixes, spots
+    [fixes, spots]
   end
 end

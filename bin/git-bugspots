@@ -1,11 +1,10 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
-if ARGV.empty? || !Dir.exist?(ARGV[0])
-  ARGV.unshift Dir.pwd
-end
+ARGV.unshift Dir.pwd if ARGV.empty? || !Dir.exist?(ARGV[0])
 
 repo = ARGV[0]
-args = ARGV[1..-1] || []
+args = ARGV[1..] || []
 
 # Use argv form to avoid invoking a shell with untrusted option strings.
-exec("bugspots", repo, *args)
+exec('bugspots', repo, *args)
