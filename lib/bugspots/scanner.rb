@@ -3,58 +3,51 @@
 require 'rugged'
 
 module Bugspots
-  Fix = Struct.new(:message, :date, :files)
-  Spot = Struct.new(:file, :score)
-
   def self.scan(repo, branch = 'main', depth = nil, regex = nil, exclude_path_regex = nil)
     regex ||= /\b(fix(es|ed)?|close(s|d)?)\b/i
-    fixes = []
 
     if depth && depth.negative?
       raise ArgumentError, 'depth must be greater than or equal to 0'
     end
 
     repo = Rugged::Repository.new(repo)
-    unless repo.branches.each_name(:local).sort.find { |b| b == branch }
-      raise ArgumentError, "no such branch in the repo: #{branch}"
-    end
+    ensure_branch_exists!(repo, branch)
 
+    fixes = collect_fixes(repo, branch, depth, regex, exclude_path_regex)
+    spots = hotspot_scores(fixes)
+    [fixes, spots]
+  end
+
+  def self.ensure_branch_exists!(repo, branch)
+    return if repo.branches.each_name(:local).any? { |name| name == branch }
+
+    raise ArgumentError, "no such branch in the repo: #{branch}"
+  end
+
+  def self.collect_fixes(repo, branch, depth, regex, exclude_path_regex)
     walker = Rugged::Walker.new(repo)
     walker.sorting(Rugged::SORT_TOPO)
     walker.push(repo.branches[branch].target)
     walker = walker.take(depth) if depth
+
+    fixes = []
     walker.each do |commit|
       next unless commit.message.scrub =~ regex
 
-      files = commit.diff(commit.parents.first).deltas.collect do |d|
-        d.old_file[:path]
-      end
-      files.reject! { |file| file.match?(exclude_path_regex) } if exclude_path_regex
-      fixes << Fix.new(commit.message.scrub.split("\n").first, commit.time, files)
+      fixes << Fix.new(
+        commit.message.scrub.split("\n").first,
+        commit.time,
+        collect_fix_files(commit, exclude_path_regex)
+      )
     end
 
-    return [fixes, []] if fixes.empty?
+    fixes
+  end
 
-    hotspots = Hash.new(0)
-    current_time = Time.now
-    oldest_fix_date = fixes.min_by(&:date).date
-    fixes.each do |fix|
-      fix.files.each do |file|
-        # The timestamp used in the equation is normalized from 0 to 1, where
-        # 0 is the earliest point in the code base, and 1 is now (where now is
-        # when the algorithm was run). Note that the score changes over time
-        # with this algorithm due to the moving normalization; it's not meant
-        # to provide some objective score, only provide a means of comparison
-        # between one file and another at any one point in time
-        t = 1 - ((current_time - fix.date).to_f / (current_time - oldest_fix_date))
-        hotspots[file] += 1 / (1 + Math.exp((-12 * t) + 12))
-      end
-    end
+  def self.collect_fix_files(commit, exclude_path_regex)
+    files = commit.diff(commit.parents.first).deltas.map { |delta| delta.old_file[:path] }
+    return files unless exclude_path_regex
 
-    spots = hotspots.sort_by { |_k, v| v }.reverse.collect do |spot|
-      Spot.new(spot.first, format('%.4f', spot.last))
-    end
-
-    [fixes, spots]
+    files.reject { |file| file.match?(exclude_path_regex) }
   end
 end

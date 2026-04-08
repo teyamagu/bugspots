@@ -2,9 +2,12 @@
 
 [![CI](https://github.com/teyamagu/bugspots/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/teyamagu/bugspots/actions/workflows/ci.yml)
 
-`bugspots` is a Ruby CLI that applies a simple bug prediction heuristic to a Git
-repository and highlights files that have historically attracted bug-fix
-commits.
+`bugspots` is a Ruby CLI for analyzing Git repositories with three reporting
+modes:
+
+- historical bug-fix hotspots
+- file-level cyclomatic complexity for Go / TypeScript
+- a combined score that multiplies hotspot and cyclomatic scores
 
 The approach is based on Google Engineering's write-up:
 [Bug Prediction at Google](http://google-engtools.blogspot.com/2011/12/bug-prediction-at-google.html)
@@ -14,13 +17,14 @@ The approach is based on Google Engineering's write-up:
 > research indicates that predicting bugs from the source history works very
 > well, so we decided to deploy it at Google.
 
-Point `bugspots` at any Git repository and it will identify likely hotspots for
-you.
+Point `bugspots` at any Git repository and it will identify likely hotspots for you.
 
 ## Features
 
 - Scan a local Git repository and identify bug-fix commits.
 - Score files by historical bug-fix concentration.
+- Measure file-level cyclomatic complexity for Go / TypeScript using `lizard`.
+- Combine hotspot and cyclomatic scores into a single sortable view.
 - Run as a standalone CLI or as a `git bugspots` subcommand.
 - Default to the `main` branch while allowing explicit branch selection.
 
@@ -29,6 +33,7 @@ you.
 - Ruby `4.0.1`
 - Git repository to analyze
 - Native build tooling for `rugged`
+- Python 3 + `lizard` when using cyclomatic complexity modes (`-c`, `--both`)
   - macOS: `pkg-config`, `cmake`, Xcode Command Line Tools
   - Ubuntu/Debian: `pkg-config`, `cmake`, build-essential
 
@@ -46,6 +51,8 @@ gem install bugspots
 git clone git@github.com:teyamagu/bugspots.git
 cd bugspots
 bundle install
+python3 -m venv .venv
+.venv/bin/pip install lizard
 ```
 
 If `rugged` fails to build, install system packages first.
@@ -71,6 +78,26 @@ brew install pkg-config cmake
 bugspots /path/to/repo
 ```
 
+### Reporting modes
+
+Default hotspot mode:
+
+```bash
+bugspots /path/to/repo
+```
+
+Cyclomatic complexity mode:
+
+```bash
+bugspots /path/to/repo -c
+```
+
+Combined mode:
+
+```bash
+bugspots /path/to/repo --both
+```
+
 ### Run inside a target repository
 
 ```bash
@@ -78,7 +105,7 @@ cd /path/to/repo
 git bugspots
 ```
 
-### Common options
+### Common examples
 
 ```bash
 bugspots /path/to/repo -b main -d 500
@@ -86,16 +113,33 @@ bugspots /path/to/repo --display-timestamps
 bugspots /path/to/repo -w "fix,close"
 bugspots /path/to/repo -r '/fix(es|ed)? #(\d+)/i'
 bugspots /path/to/repo --exclude-path '/^generated\\//'
+bugspots /path/to/repo -c --branch main --exclude-path '/^generated\\//'
+bugspots /path/to/repo --both --branch main --exclude-path '/^generated\\//'
 ```
 
 Options:
 
+- `-c`, `--cyclomatic-complexity`: report file-level cyclomatic complexity for Go / TypeScript files. Output is `sum(CCN per function)` plus function count for each file.
+- `--both`: report file-level combined scores using `hotspot_score * cyclomatic_score`. Output also includes the underlying hotspot score, cyclomatic score, and function count.
 - `-b`, `--branch [name]`: branch to scan. Default is `main`.
 - `-d`, `--depth [depth]`: number of commits to traverse.
 - `-w`, `--words ["w1,w2"]`: comma-separated bug-fix keywords.
 - `-r`, `--regex [regex]`: custom bug-fix regex.
 - `--exclude-path [regex]`: exclude changed file paths matching the regex.
 - `--display-timestamps`: include commit timestamps in output.
+
+When `-c` is specified, only `-b` and `--exclude-path` can be used together.
+`-d`, `-w`, `-r`, and `--display-timestamps` are rejected in cyclomatic
+complexity mode.
+
+When `--both` is specified, only `-b` and `--exclude-path` can be used together.
+`-d`, `-w`, `-r`, `--display-timestamps`, and `-c` are rejected in combined mode.
+
+`--both` uses the default hotspot bug-fix regex and scans the full selected
+branch history.
+
+In this repository, `bugspots` will automatically use `.venv/bin/python3` for
+`-c` and `--both` when that virtualenv exists.
 
 ## Example Output
 
@@ -165,6 +209,33 @@ $ git bugspots -d 500
 		0.0 - tests/test_file_watch.rb
 		0.0 - ext/fastfilereader/mapper.cpp
 		0.0 - lib/protocols/httpclient.rb
+```
+
+Cyclomatic complexity mode:
+
+```bash
+$ bugspots /your/git/repo -c
+
+	Scanning /your/git/repo repo
+	Found 2 files with cyclomatic complexity:
+
+	Cyclomatic Complexity:
+		7 (2 functions) - main.go
+		4 (1 functions) - web/app.ts
+```
+
+Combined mode:
+
+```bash
+$ bugspots /your/git/repo --both
+
+	Scanning /your/git/repo repo
+	Found 3 files with combined scores:
+
+	Combined Scores:
+		2.1000 (hotspot: 0.3000, cyclomatic: 7, functions: 2) - main.go
+		0.0000 (hotspot: 0.0000, cyclomatic: 4, functions: 1) - only_complexity.ts
+		0.0000 (hotspot: 0.5000, cyclomatic: 0, functions: 0) - ruby_only.rb
 ```
 
 ## Development

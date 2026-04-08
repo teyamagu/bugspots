@@ -5,9 +5,11 @@ require 'minitest/autorun'
 
 require 'bugspots'
 require_relative 'support/repo_helpers'
+require_relative 'support/stub_helpers'
 
 class BugspotsScannerTest < Minitest::Test
   include RepoHelpers
+  include StubHelpers
 
   def test_scan_excludes_matching_paths
     with_scanner_repo do |repo_dir, repo|
@@ -147,17 +149,5 @@ class BugspotsScannerTest < Minitest::Test
 
   def with_scanner_repo(&block)
     with_rugged_repo('bugspots-scanner', &block)
-  end
-
-  def with_stubbed_singleton_method(klass, method_name, return_value)
-    singleton = klass.singleton_class
-    original_method = klass.method(method_name)
-
-    singleton.send(:define_method, method_name) { |*_args, **_kwargs, &_block| return_value }
-    yield
-  ensure
-    singleton.send(:define_method, method_name) do |*args, **kwargs, &block|
-      original_method.call(*args, **kwargs, &block)
-    end
   end
 end
