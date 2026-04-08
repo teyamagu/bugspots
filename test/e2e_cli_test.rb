@@ -4,6 +4,7 @@ require 'minitest/autorun'
 require_relative 'support/cli_test_helpers'
 require_relative 'support/repo_helpers'
 
+# rubocop:disable Metrics/ClassLength
 class E2EBugspotsCliTest < Minitest::Test
   include CliTestHelpers
   include RepoHelpers
@@ -47,7 +48,7 @@ class E2EBugspotsCliTest < Minitest::Test
       output = strip_ansi(stdout)
       assert_includes output, 'Found 1 bugfix commits, with 1 hotspots:'
       assert_match(/-\sapp\.rb/, output)
-      refute_match(/-\sgenerated\/schema\.rb/, output)
+      refute_match(%r{-\sgenerated/schema\.rb}, output)
     end
   end
 
@@ -72,7 +73,8 @@ class E2EBugspotsCliTest < Minitest::Test
       git(repo_dir, 'add', 'app.rb')
       git(repo_dir, 'commit', '-m', 'fix: initial commit')
 
-      assert_cli_option_error(repo_dir, ['-b', 'does-not-exist'], 'no such branch in the repo: does-not-exist')
+      assert_cli_option_error(repo_dir, ['-b', 'does-not-exist'],
+                              'no such branch in the repo: does-not-exist')
     end
   end
 
@@ -100,6 +102,7 @@ class E2EBugspotsCliTest < Minitest::Test
   end
 
   def test_bugspots_cli_reports_cyclomatic_complexity_scores
+    # rubocop:disable Metrics/BlockLength
     with_cli_repo do |repo_dir|
       write_file(
         repo_dir,
@@ -132,9 +135,10 @@ class E2EBugspotsCliTest < Minitest::Test
       output = strip_ansi(stdout)
       assert_includes output, 'Found 2 files with cyclomatic complexity:'
       assert_match(/7 \(2 functions\) - main\.go/, output)
-      assert_match(/4 \(1 functions\) - web\/app\.ts/, output)
+      assert_match(%r{4 \(1 functions\) - web/app\.ts}, output)
       assert_empty stderr
     end
+    # rubocop:enable Metrics/BlockLength
   end
 
   def test_bugspots_cli_cyclomatic_mode_honors_branch_and_exclude_path
@@ -165,7 +169,7 @@ class E2EBugspotsCliTest < Minitest::Test
       output = strip_ansi(stdout)
       assert_match(/2 \(1 functions\) - feature\.ts/, output)
       assert_match(/7 \(2 functions\) - main\.go/, output)
-      refute_match(/generated\/skip\.ts/, output)
+      refute_match(%r{generated/skip\.ts}, output)
     end
   end
 
@@ -185,7 +189,8 @@ class E2EBugspotsCliTest < Minitest::Test
   def test_bugspots_cli_cyclomatic_mode_handles_large_file_sets
     with_cli_repo do |repo_dir|
       205.times do |index|
-        write_file(repo_dir, "pkg/file_#{index}.ts", "export function f#{index}() { return #{index}; }\n")
+        write_file(repo_dir, "pkg/file_#{index}.ts",
+                   "export function f#{index}() { return #{index}; }\n")
       end
       git(repo_dir, 'add', 'pkg')
       git(repo_dir, 'commit', '-m', 'feat: add many files')
@@ -200,13 +205,14 @@ class E2EBugspotsCliTest < Minitest::Test
 
       output = strip_ansi(stdout)
       assert_includes output, 'Found 205 files with cyclomatic complexity:'
-      assert_match(/1 \(1 functions\) - pkg\/file_0\.ts/, output)
-      assert_match(/1 \(1 functions\) - pkg\/file_204\.ts/, output)
+      assert_match(%r{1 \(1 functions\) - pkg/file_0\.ts}, output)
+      assert_match(%r{1 \(1 functions\) - pkg/file_204\.ts}, output)
       refute_match(/Argument list too long/, stderr)
     end
   end
 
   def test_bugspots_cli_reports_combined_scores
+    # rubocop:disable Metrics/BlockLength
     with_cli_repo do |repo_dir|
       write_file(repo_dir, 'main.go', "package main\nfunc base() {}\n")
       write_file(repo_dir, 'ruby_only.rb', "puts 'hello'\n")
@@ -234,13 +240,22 @@ class E2EBugspotsCliTest < Minitest::Test
 
       output = strip_ansi(stdout)
       assert_includes output, 'Found 3 files with combined scores:'
-      assert_match(/[0-9]+\.[0-9]{4} \(hotspot: [0-9]+\.[0-9]{4}, cyclomatic: 7, functions: 2\) - main\.go/, output)
-      assert_match(/0\.0000 \(hotspot: 0\.0000, cyclomatic: 4, functions: 1\) - only_complexity\.ts/, output)
-      assert_match(/0\.0000 \(hotspot: [0-9]+\.[0-9]{4}, cyclomatic: 0, functions: 0\) - ruby_only\.rb/, output)
+      assert_match(
+        /[0-9]+\.[0-9]{4} \(hotspot: [0-9]+\.[0-9]{4}, cyclomatic: 7, functions: 2\) - main\.go/,
+        output
+      )
+      assert_match(
+        /0\.0000 \(hotspot: 0\.0000, cyclomatic: 4, functions: 1\) - only_complexity\.ts/, output
+      )
+      assert_match(
+        /0\.0000 \(hotspot: [0-9]+\.[0-9]{4}, cyclomatic: 0, functions: 0\) - ruby_only\.rb/, output
+      )
     end
+    # rubocop:enable Metrics/BlockLength
   end
 
   def test_bugspots_cli_both_mode_honors_branch_and_exclude_path
+    # rubocop:disable Metrics/BlockLength
     with_cli_repo do |repo_dir|
       write_file(repo_dir, 'main.go', "package main\nfunc base() {}\n")
       write_file(repo_dir, 'generated/skip.ts', "export function skip() { return 1; }\n")
@@ -269,9 +284,13 @@ class E2EBugspotsCliTest < Minitest::Test
       assert_cli_success(status, stdout, stderr)
 
       output = strip_ansi(stdout)
-      assert_match(/[0-9]+\.[0-9]{4} \(hotspot: [0-9]+\.[0-9]{4}, cyclomatic: 2, functions: 1\) - feature\.ts/, output)
-      refute_match(/generated\/skip\.ts/, output)
+      assert_match(
+        /[0-9]+\.[0-9]{4} \(hotspot: [0-9]+\.[0-9]{4}, cyclomatic: 2, functions: 1\) - feature\.ts/,
+        output
+      )
+      refute_match(%r{generated/skip\.ts}, output)
     end
+    # rubocop:enable Metrics/BlockLength
   end
 
   def test_bugspots_cli_both_mode_rejects_incompatible_options
@@ -295,6 +314,8 @@ class E2EBugspotsCliTest < Minitest::Test
   end
 
   def assert_both_option_error(repo_dir, args, flag)
-    assert_cli_option_error(repo_dir, ['--both', *args], "option #{flag} is not available with --both")
+    assert_cli_option_error(repo_dir, ['--both', *args],
+                            "option #{flag} is not available with --both")
   end
 end
+# rubocop:enable Metrics/ClassLength

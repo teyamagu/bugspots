@@ -5,6 +5,7 @@ require 'minitest/autorun'
 require 'bugspots'
 require_relative 'support/repo_helpers'
 
+# rubocop:disable Metrics/ClassLength
 class CyclomaticComplexityTest < Minitest::Test
   include RepoHelpers
 
@@ -13,7 +14,7 @@ class CyclomaticComplexityTest < Minitest::Test
   def test_scan_uses_branch_snapshot_and_excludes_paths
     captured_files = nil
     captured_contents = nil
-    runner = lambda do |snapshot_root:, files:, languages:|
+    runner = lambda do |snapshot_root:, files:, _languages:|
       captured_files = files
       captured_contents = files.to_h do |relative_path|
         [relative_path, File.read(File.join(snapshot_root, relative_path))]
@@ -25,16 +26,17 @@ class CyclomaticComplexityTest < Minitest::Test
       ]
     end
 
+    # rubocop:disable Metrics/BlockLength
     with_rugged_repo('bugspots-cyclomatic') do |repo_dir, repo|
       write_file(repo_dir, 'main.go', "package main\n")
-      write_file(repo_dir, 'generated/skip.ts', 'export const skip = true;' + "\n")
+      write_file(repo_dir, 'generated/skip.ts', "export const skip = true;\n")
       write_file(repo_dir, 'ignore.rb', "puts 'ignore'\n")
       commit_all(repo, 'initial commit')
 
       repo.create_branch('feature', repo.head.target_id)
       repo.checkout('refs/heads/feature')
 
-      write_file(repo_dir, 'ui/feature.ts', 'export function feature() { return 1; }' + "\n")
+      write_file(repo_dir, 'ui/feature.ts', "export function feature() { return 1; }\n")
       write_file(repo_dir, 'main.go', "package changed\n")
       commit_all(repo, 'feat: add feature')
 
@@ -43,7 +45,7 @@ class CyclomaticComplexityTest < Minitest::Test
       results = Bugspots.cyclomatic_complexity(
         repo_dir,
         'feature',
-        /^generated\//,
+        %r{^generated/},
         runner: runner
       )
 
@@ -59,6 +61,7 @@ class CyclomaticComplexityTest < Minitest::Test
         results.map { |metric| [metric.file, metric.score, metric.function_count] }
       )
     end
+    # rubocop:enable Metrics/BlockLength
   end
 
   def test_scan_returns_empty_when_no_supported_files_exist
@@ -84,9 +87,9 @@ class CyclomaticComplexityTest < Minitest::Test
       { name: 'vendor-submodule', type: :commit, oid: :missing_oid },
       { name: 'main.go', type: :blob, oid: :blob_oid }
     ]
-    tree = Struct.new(:entries) do
+    tree = Struct.new(:tree_entries) do
       def each(&block)
-        entries.each(&block)
+        tree_entries.each(&block)
       end
     end.new(entries)
     blob = Struct.new(:content).new("package main\n")
@@ -106,8 +109,8 @@ class CyclomaticComplexityTest < Minitest::Test
 
   def test_scan_batches_large_file_lists_for_runner
     calls = []
-    runner = lambda do |snapshot_root:, files:, languages:|
-      calls << [snapshot_root, files, languages]
+    runner = lambda do |snapshot_root:, files:, _languages:|
+      calls << [snapshot_root, files]
       files.map { |file| FakeMetric.new(file, 1, 1) }
     end
 
@@ -132,3 +135,4 @@ class CyclomaticComplexityTest < Minitest::Test
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

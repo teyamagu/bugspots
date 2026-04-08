@@ -3,12 +3,11 @@
 require 'rugged'
 
 module Bugspots
+  # rubocop:disable Metrics/ParameterLists
   def self.scan(repo, branch = 'main', depth = nil, regex = nil, exclude_path_regex = nil)
     regex ||= /\b(fix(es|ed)?|close(s|d)?)\b/i
 
-    if depth && depth.negative?
-      raise ArgumentError, 'depth must be greater than or equal to 0'
-    end
+    raise ArgumentError, 'depth must be greater than or equal to 0' if depth&.negative?
 
     repo = Rugged::Repository.new(repo)
     ensure_branch_exists!(repo, branch)
@@ -17,6 +16,7 @@ module Bugspots
     spots = hotspot_scores(fixes)
     [fixes, spots]
   end
+  # rubocop:enable Metrics/ParameterLists
 
   def self.ensure_branch_exists!(repo, branch)
     return if repo.branches.each_name(:local).any? { |name| name == branch }

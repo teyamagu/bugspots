@@ -24,7 +24,8 @@ class BothScoresTest < Minitest::Test
         ['ruby_only.rb', '0.0000', '0.5000', 0, 0]
       ],
       results.map do |result|
-        [result.file, result.combined_score, result.hotspot_score, result.cyclomatic_score, result.function_count]
+        [result.file, result.combined_score, result.hotspot_score, result.cyclomatic_score,
+         result.function_count]
       end
     )
   end

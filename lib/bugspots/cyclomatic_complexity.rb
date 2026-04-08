@@ -7,6 +7,7 @@ require 'rugged'
 require 'tmpdir'
 
 module Bugspots
+  # rubocop:disable Metrics/ModuleLength
   module CyclomaticComplexity
     LANGUAGE_DEFINITIONS = {
       go: {
@@ -19,7 +20,7 @@ module Bugspots
       }
     }.freeze
 
-    LIZARD_SCRIPT = <<~PY.freeze
+    LIZARD_SCRIPT = <<~PY
       import json
       import sys
 
@@ -41,9 +42,13 @@ module Bugspots
       print(json.dumps(results))
     PY
 
-    DEFAULT_BATCH_SIZE = 200.freeze
+    DEFAULT_BATCH_SIZE = 200
+    MISSING_LIZARD_MESSAGE = 'cyclomatic complexity mode requires Python package "lizard". '\
+                             'Install it with: pip install lizard'
 
-    def self.scan(repo_path, branch = 'main', exclude_path_regex = nil, runner: method(:run_lizard), batch_size: DEFAULT_BATCH_SIZE)
+    # rubocop:disable Metrics/MethodLength
+    def self.scan(repo_path, branch = 'main', exclude_path_regex = nil,
+                  runner: method(:run_lizard), batch_size: DEFAULT_BATCH_SIZE)
       repo = Rugged::Repository.new(repo_path)
       Bugspots.ensure_branch_exists!(repo, branch)
 
@@ -53,18 +58,19 @@ module Bugspots
       Dir.mktmpdir('bugspots-cyclomatic') do |dir|
         write_snapshot(dir, files)
         results = files
-          .map { |file| file[:path] }
-          .each_slice(batch_size)
-          .flat_map do |batch|
-            runner.call(
-              snapshot_root: dir,
-              files: batch,
-              languages: supported_lizard_languages
-            )
-          end
+                  .map { |file| file[:path] }
+                  .each_slice(batch_size)
+                  .flat_map do |batch|
+                    runner.call(
+                      snapshot_root: dir,
+                      files: batch,
+                      _languages: supported_lizard_languages
+                    )
+                  end
         normalize_results(results)
       end
     end
+    # rubocop:enable Metrics/MethodLength
 
     def self.snapshot_supported_files(repo, branch, exclude_path_regex)
       tree = repo.branches[branch].target.tree
@@ -73,13 +79,15 @@ module Bugspots
       entries
     end
 
+    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
     def self.collect_tree_entries(repo, tree, base_path, entries, exclude_path_regex)
       tree.each do |entry|
         relative_path = [base_path, entry[:name]].compact.join('/')
         next if exclude_path_regex && relative_path.match?(exclude_path_regex)
 
         if entry[:type] == :tree
-          collect_tree_entries(repo, repo.lookup(entry[:oid]), relative_path, entries, exclude_path_regex)
+          collect_tree_entries(repo, repo.lookup(entry[:oid]), relative_path, entries,
+                               exclude_path_regex)
           next
         end
 
@@ -89,6 +97,7 @@ module Bugspots
         entries << { path: relative_path, content: repo.lookup(entry[:oid]).content }
       end
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
     def self.supported_file?(path)
       LANGUAGE_DEFINITIONS.values.any? do |definition|
@@ -108,7 +117,8 @@ module Bugspots
       end
     end
 
-    def self.run_lizard(snapshot_root:, files:, languages:)
+    # rubocop:disable Metrics/MethodLength
+    def self.run_lizard(snapshot_root:, files:, _languages:)
       stdout, stderr, status = Open3.capture3(
         lizard_env,
         lizard_python_command,
@@ -132,6 +142,7 @@ module Bugspots
         )
       end
     end
+    # rubocop:enable Metrics/MethodLength
 
     def self.lizard_python_command
       return ENV['BUGSPOTS_LIZARD_PYTHON'] if ENV['BUGSPOTS_LIZARD_PYTHON']
@@ -149,18 +160,19 @@ module Bugspots
     end
 
     def self.raise_missing_lizard_error
-      raise ArgumentError, 'cyclomatic complexity mode requires Python package "lizard". Install it with: pip install lizard'
+      raise ArgumentError, MISSING_LIZARD_MESSAGE
     end
 
     def self.normalize_results(results)
-      results
-        .map do |result|
-          relative_path = result.file.sub(%r{\A\./}, '')
-          Complexity.new(relative_path, result.score.to_i, result.function_count.to_i)
-        end
-        .sort_by { |result| [-result.score, -result.function_count, result.file] }
+      normalized = results.map do |result|
+        relative_path = result.file.sub(%r{\A\./}, '')
+        Complexity.new(relative_path, result.score.to_i, result.function_count.to_i)
+      end
+
+      normalized.sort_by { |result| [-result.score, -result.function_count, result.file] }
     end
   end
+  # rubocop:enable Metrics/ModuleLength
 
   def self.cyclomatic_complexity(repo_path, branch = 'main', exclude_path_regex = nil,
                                  runner: CyclomaticComplexity.method(:run_lizard),

@@ -35,6 +35,7 @@ def validate_both_options!(options)
 end
 
 options = {}
+# rubocop:disable Metrics/BlockLength
 OptionParser.new do |opts|
   opts.banner = <<~TEXT
     Usage: bugspots /path/to/git/repo [options]
@@ -94,6 +95,7 @@ OptionParser.new do |opts|
   opts.separator '  -c only allows -b and --exclude-path.'
   opts.separator '  --both only allows -b and --exclude-path.'
 end.parse!
+# rubocop:enable Metrics/BlockLength
 
 # Set main as the default branch
 options[:branch] ||= 'main'

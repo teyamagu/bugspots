@@ -21,7 +21,8 @@ class BugspotsScannerTest < Minitest::Test
       write_file(repo_dir, 'generated/schema.rb', "# schema v2\n")
       commit_all(repo, 'fix: adjust greeting')
 
-      fixes, spots = Bugspots.scan(repo_dir, repo.head.name.delete_prefix('refs/heads/'), nil, nil, /^generated\//)
+      fixes, spots = Bugspots.scan(repo_dir, repo.head.name.delete_prefix('refs/heads/'), nil, nil,
+                                   %r{^generated/})
 
       assert_equal 1, fixes.size
       assert_equal ['app.rb'], fixes.first.files

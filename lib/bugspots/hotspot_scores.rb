@@ -2,6 +2,7 @@
 
 module Bugspots
   module HotspotScores
+    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
     def self.calculate(fixes, current_time: Time.now)
       return [] if fixes.empty?
 
@@ -19,6 +20,7 @@ module Bugspots
         .reverse
         .map { |file, score| Spot.new(file, format('%.4f', score)) }
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
     def self.score_for_fix(fix_date, oldest_fix_date, current_time)
       # The timestamp used in the equation is normalized from 0 to 1, where
