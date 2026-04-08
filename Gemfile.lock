@@ -8,7 +8,13 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
+    drb (2.2.3)
+    minitest (6.0.3)
+      drb (~> 2.0)
+      prism (~> 1.5)
+    prism (1.9.0)
     rainbow (3.1.1)
+    rake (13.3.1)
     rugged (1.9.0)
 
 PLATFORMS
@@ -16,6 +22,11 @@ PLATFORMS
 
 DEPENDENCIES
   bugspots!
+  minitest
+  rake
+
+RUBY VERSION
+  ruby 4.0.1
 
 BUNDLED WITH
-   1.17.2
+  4.0.7

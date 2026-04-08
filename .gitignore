@@ -1,4 +1,5 @@
 *.gem
 .bundle
+vendor/bundle
 pkg/*
 .rbenv-version

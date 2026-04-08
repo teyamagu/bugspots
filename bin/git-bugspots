@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-if ARGV.empty? or not Dir.exists? ARGV[0]
+if ARGV.empty? || !Dir.exist?(ARGV[0])
   ARGV.unshift Dir.pwd
 end
 

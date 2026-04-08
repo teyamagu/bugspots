@@ -17,7 +17,11 @@ Gem::Specification.new do |s|
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
+  s.required_ruby_version = ">= 4.0.1", "< 5.0"
 
   s.add_dependency "rugged", ">= 1.7.2"
   s.add_dependency "rainbow"
+
+  s.add_development_dependency "minitest"
+  s.add_development_dependency "rake"
 end
